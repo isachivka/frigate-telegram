@@ -396,36 +396,20 @@ func SendMessageEvent(FrigateEvent EventStruct, bot *tgbotapi.BotAPI) {
 	// Prepare text message
 	text := ""
 	t_start := time.Unix(int64(FrigateEvent.StartTime), 0)
-	if conf.ShortEventMessageFormat {
-		// Short message format
-		text += fmt.Sprintf("#%s detected on #%s at %s",
-			NormalizeTagText(FrigateEvent.Label),
-			NormalizeTagText(FrigateEvent.Camera),
-			t_start)
-
-	} else {
-		// Normal message format
-		text += "*Event*\n"
-		text += "┣*Camera*\n┗ #" + NormalizeTagText(FrigateEvent.Camera) + "\n"
-		text += "┣*Label*\n┗ #" + NormalizeTagText(FrigateEvent.Label) + "\n"
-		SubLabels := GetTagList(FrigateEvent.SubLabel)
-		if len(SubLabels) > 0 {
-			if FrigateEvent.SubLabel != nil {
-				text += "┣*SubLabel*\n┗ #" + strings.Join(SubLabels, ", #") + "\n"
-			}
-		}
-		text += fmt.Sprintf("┣*Start time*\n┗ `%s", t_start) + "`\n"
-		if FrigateEvent.EndTime == 0 {
-			text += "┣*End time*\n┗ `In progess`" + "\n"
-		} else {
-			t_end := time.Unix(int64(FrigateEvent.EndTime), 0)
-			text += fmt.Sprintf("┣*End time*\n┗ `%s", t_end) + "`\n"
-		}
-		text += "*URLs*\n"
-		text += "┣[Events](" + conf.FrigateExternalURL + "/events?cameras=" + FrigateEvent.Camera + "&labels=" + FrigateEvent.Label + "&zones=" + strings.Join(GetTagList(FrigateEvent.Zones), ",") + ")\n"
-		text += "┣[General](" + conf.FrigateExternalURL + ")\n"
-		text += "┗[Source clip](" + conf.FrigateExternalURL + "/api/events/" + FrigateEvent.ID + "/clip.mp4)\n"
+	t_start_str := t_start.Format("02.01 15:04:05")
+	text += "🎥 #" + NormalizeTagText(FrigateEvent.Camera) + "\n"
+	text += "🏷️ #" + NormalizeTagText(FrigateEvent.Label) + "\n"
+	SubLabels := GetTagList(FrigateEvent.SubLabel)
+	if len(SubLabels) > 0 && FrigateEvent.SubLabel != nil {
+		text += "🏷️ #" + strings.Join(SubLabels, ", #") + "\n"
 	}
+	if FrigateEvent.EndTime == 0 {
+		text += "⏰ " + t_start_str + " - в процессе\n"
+	} else {
+		t_end := time.Unix(int64(FrigateEvent.EndTime), 0)
+		text += "⏰ " + t_start_str + " - " + t_end.Format("02.01 15:04:05") + "\n"
+	}
+	text += "ℹ️ [Исходник](" + conf.FrigateExternalURL + "/api/events/" + FrigateEvent.ID + "/clip.mp4)\n"
 
 	var medias []interface{}
 	var FilePathThumbnail string
@@ -670,12 +654,22 @@ func ParseEvents(FrigateEvents EventsStruct, bot *tgbotapi.BotAPI, WatchDog bool
 
 func SendTextEvent(FrigateEvent EventStruct, bot *tgbotapi.BotAPI) {
 	conf := config.New()
-	text := "*New event*\n"
-	text += "┣*Camera*\n┗ `" + FrigateEvent.Camera + "`\n"
-	text += "┣*Label*\n┗ `" + FrigateEvent.Label + "`\n"
+	text := ""
 	t_start := time.Unix(int64(FrigateEvent.StartTime), 0)
-	text += fmt.Sprintf("┣*Start time*\n┗ `%s", t_start) + "`\n"
-	text += "┣*Event URL*\n┗ " + conf.FrigateExternalURL + "/events?cameras=" + FrigateEvent.Camera + "&labels=" + FrigateEvent.Label + "&zones=" + strings.Join(GetTagList(FrigateEvent.Zones), ",")
+	t_start_str := t_start.Format("02.01 15:04:05")
+	text += "🎥 #" + NormalizeTagText(FrigateEvent.Camera) + "\n"
+	text += "🏷️ #" + NormalizeTagText(FrigateEvent.Label) + "\n"
+	SubLabels := GetTagList(FrigateEvent.SubLabel)
+	if len(SubLabels) > 0 && FrigateEvent.SubLabel != nil {
+		text += "🏷️ #" + strings.Join(SubLabels, ", #") + "\n"
+	}
+	if FrigateEvent.EndTime == 0 {
+		text += "⏰ " + t_start_str + " - в процессе\n"
+	} else {
+		t_end := time.Unix(int64(FrigateEvent.EndTime), 0)
+		text += "⏰ " + t_start_str + " - " + t_end.Format("02.01 15:04:05") + "\n"
+	}
+	text += "ℹ️ [Исходник](" + conf.FrigateExternalURL + "/api/events/" + FrigateEvent.ID + "/clip.mp4)"
 	msg := tgbotapi.NewMessage(conf.TelegramChatID, text)
 	msg.ParseMode = tgbotapi.ModeMarkdown
 	msg.DisableNotification = redis.GetStateMuteEvent()
