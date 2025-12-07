@@ -23,12 +23,13 @@ type EventsStruct []struct {
 	Box    interface{} `json:"box"`
 	Camera string      `json:"camera"`
 	Data   struct {
-		Attributes []interface{} `json:"attributes"`
-		Box        []float64     `json:"box"`
-		Region     []float64     `json:"region"`
-		Score      float64       `json:"score"`
-		TopScore   float64       `json:"top_score"`
-		Type       string        `json:"type"`
+		Attributes    []interface{} `json:"attributes"`
+		Box           []float64     `json:"box"`
+		Region        []float64     `json:"region"`
+		Score         float64       `json:"score"`
+		TopScore      float64       `json:"top_score"`
+		SubLabelScore *float64      `json:"sub_label_score"`
+		Type          string        `json:"type"`
 	} `json:"data"`
 	EndTime            float64     `json:"end_time"`
 	FalsePositive      interface{} `json:"false_positive"`
@@ -49,12 +50,13 @@ type EventStruct struct {
 	Box    interface{} `json:"box"`
 	Camera string      `json:"camera"`
 	Data   struct {
-		Attributes []interface{} `json:"attributes"`
-		Box        []float64     `json:"box"`
-		Region     []float64     `json:"region"`
-		Score      float64       `json:"score"`
-		TopScore   float64       `json:"top_score"`
-		Type       string        `json:"type"`
+		Attributes    []interface{} `json:"attributes"`
+		Box           []float64     `json:"box"`
+		Region        []float64     `json:"region"`
+		Score         float64       `json:"score"`
+		TopScore      float64       `json:"top_score"`
+		SubLabelScore *float64      `json:"sub_label_score"`
+		Type          string        `json:"type"`
 	} `json:"data"`
 	EndTime            float64     `json:"end_time"`
 	FalsePositive      interface{} `json:"false_positive"`
@@ -111,6 +113,23 @@ func GetTagList(subLabel interface{}) []string {
 		log.Warn.Printf("Unexpected sub_label type: %T", v)
 	}
 	return my_tags
+}
+
+func extractSubLabel(subLabel interface{}) string {
+	switch v := subLabel.(type) {
+	case string:
+		return v
+	case []interface{}:
+		var parts []string
+		for _, item := range v {
+			if s, ok := item.(string); ok && s != "" {
+				parts = append(parts, s)
+			}
+		}
+		return strings.Join(parts, ", ")
+	default:
+		return ""
+	}
 }
 
 func ErrorSend(TextError string, bot *tgbotapi.BotAPI, EventID string) {
@@ -399,9 +418,12 @@ func SendMessageEvent(FrigateEvent EventStruct, bot *tgbotapi.BotAPI) {
 	t_start_str := t_start.Format("02.01 15:04:05")
 	text += "🎥 #" + NormalizeTagText(FrigateEvent.Camera) + "\n"
 	text += "🏷️ #" + NormalizeTagText(FrigateEvent.Label) + "\n"
-	SubLabels := GetTagList(FrigateEvent.SubLabel)
-	if len(SubLabels) > 0 && FrigateEvent.SubLabel != nil {
-		text += "🏷️ #" + strings.Join(SubLabels, ", #") + "\n"
+	if subLabel := extractSubLabel(FrigateEvent.SubLabel); subLabel != "" {
+		text += "🙂️ " + subLabel
+		if FrigateEvent.Data.SubLabelScore != nil {
+			text += fmt.Sprintf(", %.0f%%", *FrigateEvent.Data.SubLabelScore*100)
+		}
+		text += "\n"
 	}
 	if FrigateEvent.EndTime == 0 {
 		text += "⏰ " + t_start_str + " - в процессе\n"
@@ -659,9 +681,12 @@ func SendTextEvent(FrigateEvent EventStruct, bot *tgbotapi.BotAPI) {
 	t_start_str := t_start.Format("02.01 15:04:05")
 	text += "🎥 #" + NormalizeTagText(FrigateEvent.Camera) + "\n"
 	text += "🏷️ #" + NormalizeTagText(FrigateEvent.Label) + "\n"
-	SubLabels := GetTagList(FrigateEvent.SubLabel)
-	if len(SubLabels) > 0 && FrigateEvent.SubLabel != nil {
-		text += "🏷️ #" + strings.Join(SubLabels, ", #") + "\n"
+	if subLabel := extractSubLabel(FrigateEvent.SubLabel); subLabel != "" {
+		text += "🙂️ " + subLabel
+		if FrigateEvent.Data.SubLabelScore != nil {
+			text += fmt.Sprintf(", %.0f%%", *FrigateEvent.Data.SubLabelScore*100)
+		}
+		text += "\n"
 	}
 	if FrigateEvent.EndTime == 0 {
 		text += "⏰ " + t_start_str + " - в процессе\n"
