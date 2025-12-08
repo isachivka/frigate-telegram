@@ -51,6 +51,7 @@ func New() *Config {
 		RedisProtocol:           getEnvAsInt("REDIS_PROTOCOL", 3),
 		RedisTTL:                getEnvAsInt("REDIS_TTL", 1209600), // 7 days
 		EventBeforeSeconds:      getEnvAsInt("EVENT_BEFORE_SECONDS", 60),
+		EventBeforeSeconds:      getEnvAsInt("EVENT_BEFORE_SECONDS", 30),
 		SendTextEvent:           getEnvAsBool("SEND_TEXT_EVENT", false),
 		FrigateExcludeCamera:    getEnvAsSlice("FRIGATE_EXCLUDE_CAMERA", []string{"None"}, ","),
 		FrigateIncludeCamera:    getEnvAsSlice("FRIGATE_INCLUDE_CAMERA", []string{"All"}, ","),
